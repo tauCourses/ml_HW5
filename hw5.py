@@ -37,13 +37,13 @@ test_data = sklearn.preprocessing.scale(test_data_unscaled, axis=0, with_std=Fal
 
 
 def test_error(C, S):
-    return sum([1 for x in S if C(x[0]) == x[1]]) / float(len(S))
+    return 1 - sum([1 for x in S if C(x[0]) == x[1]]) / float(len(S))
 
 
 def sort_by_pixel(S, j, D):
     array = zip(S,D)
     array.sort(key=lambda x: x[0][0][j])  # sort by the j pixel
-    return array[0], array[1]
+    return [a for a,b in array], [b for a,b in array]
 
 def ERM_for_decition_stump(S, D):
     number_of_pixels = len(S[0][0])
@@ -60,16 +60,15 @@ def ERM_for_decition_stump(S, D):
             best_theta = S[0][0][j] - 1
         for i in range(len(S)):
             current_f -= S[i][1] * D[i]
-            if best_F > current_f:
+            if best_F > current_f and (len(S)==i+1 or S[i][0][j] != S[i + 1][0][j]):
                 best_F = current_f
                 best_j = j
                 if i + 1 == len(S):
-                    best_theta = (S[i][0][j] + 1) / 2
+                    best_theta = (S[i][0][j]*2 + 1) / 2
                 else:
                     best_theta = (S[i][0][j] + S[i + 1][0][j]) / 2
 
-    print best_j
-    return lambda x: 1 if (x[best_j] <= best_theta) else -1
+    return lambda x: 1 if (x[best_j] > best_theta) else -1
 
 
 def empirical_eroor(D, S, h):
@@ -84,19 +83,18 @@ def ada_boost(S, T, tests):
     h_array = []
     w_array = []
     for t in range(T):
-        print D
+        print t
         h = ERM_for_decition_stump(S, D)
         e = empirical_eroor(D, S, h)
-        print e
         w = 0.5 * numpy.log(float(1 - e) / float(e))
-        print w
         D_t = [(D[i] * numpy.exp(-w * S[i][1] * h(S[i][0]))) for i in range(len(D))]
         D = D_t / sum(D_t)
         h_array.append(h)
         w_array.append(w)
-        empirical_error.append(e)
+        empirical_error.append(
+            test_error(lambda x: 1 if sum([w * h(x) for w, h in zip(w_array, h_array)]) > 0 else -1, S))
         test_errors.append(
-            test_error(lambda x: 1 if sum([w * h(x) for w, h in zip(w_array, h_array)]) <= 0 else -1, tests))
+            test_error(lambda x: 1 if sum([w * h(x) for w, h in zip(w_array, h_array)]) > 0 else -1, tests))
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -109,4 +107,4 @@ def ada_boost(S, T, tests):
     fig.clf()
 
 
-ada_boost(zip(train_data, train_labels), 10, zip(test_data, test_labels))
+ada_boost(zip(train_data, train_labels), 100, zip(test_data, test_labels))
