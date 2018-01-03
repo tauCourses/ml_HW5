@@ -40,19 +40,10 @@ def test_error(C, S):
     return sum([1 for x in S if C(x[0]) == x[1]]) / float(len(S))
 
 
-def sort_by_pixel(S, j):
-
-    S_sorted =list(S)
-    S_sorted.sort(key=lambda x: x[0][j])
-    return S_sorted
-    # if j in sort_by_pixel.cache.keys():
-    #     return sort_by_pixel.cache[j]
-    # sort_by_pixel.cache[j] = list(S)
-    # sort_by_pixel.cache[j].sort(key=lambda x: x[0][j])  # sort by the j pixel
-    # return sort_by_pixel.cache[j]
-
-sort_by_pixel.cache = {}
-
+def sort_by_pixel(S, j, D):
+    array = zip(S,D)
+    array.sort(key=lambda x: x[0][0][j])  # sort by the j pixel
+    return array[0], array[1]
 
 def ERM_for_decition_stump(S, D):
     number_of_pixels = len(S[0][0])
@@ -61,7 +52,7 @@ def ERM_for_decition_stump(S, D):
     best_F = float("inf")
     starting__f = sum([D[i] for i in range(len(S)) if S[i][1] == 1])
     for j in range(number_of_pixels):
-        S = sort_by_pixel(S, j)
+        S, D = sort_by_pixel(S, j, D)
         current_f = starting__f
         if best_F > current_f:
             best_F = current_f
