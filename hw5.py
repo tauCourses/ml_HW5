@@ -80,7 +80,7 @@ def erm_for_decision_stump(origin_s, origin_d):
                     else:
                         best_theta = (S[i][0][j] + S[i + 1][0][j]) / 2
 
-    return lambda x: best_direction if (x[best_j] > best_theta) else -best_direction
+    return lambda x: -best_direction if (x[best_j] > best_theta) else best_direction, best_j, best_theta, best_direction
 
 
 def empirical_error(D, S, h):
@@ -91,22 +91,20 @@ def ada_boost(S, T, tests):
     D = [float(1) / float(len(S)) for _ in S]
     test_errors = []
     empirical_errors = []
-
     h_array = []
     w_array = []
     for t in range(T):
-        print t
-        h = erm_for_decision_stump(S, D)
+        h, j, theta, direction = erm_for_decision_stump(S, D)
         e = empirical_error(D, S, h)
         w = 0.5 * numpy.log(float(1 - e) / float(e))
         D_t = [(D[i] * numpy.exp(-w * S[i][1] * h(S[i][0]))) for i in range(len(D))]
         D = D_t / sum(D_t)
         h_array.append(h)
         w_array.append(w)
-        empirical_errors.append(
-            test_error(lambda x: 1 if sum([w * h(x) for w, h in zip(w_array, h_array)]) > 0 else -1, S))
-        test_errors.append(
-            test_error(lambda x: 1 if sum([w * h(x) for w, h in zip(w_array, h_array)]) > 0 else -1, tests))
+        empirical_errors_ = test_error(lambda x: 1 if sum([w * h(x) for w, h in zip(w_array, h_array)]) > 0 else -1, S)
+        empirical_errors.append(empirical_errors_)
+        test_error_ = test_error(lambda x: 1 if sum([w * h(x) for w, h in zip(w_array, h_array)]) > 0 else -1, tests)
+        test_errors.append(test_error_)
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
